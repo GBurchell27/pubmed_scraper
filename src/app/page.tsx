@@ -1,123 +1,143 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { searchPubMed, type PubMedArticle } from './services/api';
+import { Job, JobStatus } from './types/job.types';
+import { jobsApi } from './api/jobsApi';
+import Header from '../components/layout/Header';
+import Button from '../components/ui/Button';
+import StatusChip from '../components/ui/StatusChip';
+import { formatDateTime, formatJobStatus } from './utils/formatting';
 
-export default function Home() {
+export default function Dashboard() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PubMedArticle[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async () => {
-    if (!query.trim()) {
-      setError('Please enter a search term');
-      return;
-    }
+  useEffect(() => {
+    loadJobs();
+  }, []);
 
-    setLoading(true);
-    setError('');
-    
+  const loadJobs = async () => {
     try {
-      const data = await searchPubMed(query);
-      setResults(data.results || []);
+      setLoading(true);
+      const result = await jobsApi.getJobs({ limit: 10, sort_by: 'created_at', sort_order: 'desc' });
+      setJobs(result.jobs);
+      setError(null);
     } catch (err) {
-      setError('Error fetching results: ' + (err instanceof Error ? err.message : String(err)));
-      setResults([]);
+      setError(err instanceof Error ? err.message : 'Failed to load jobs');
     } finally {
       setLoading(false);
     }
   };
 
-  const viewArticleDetails = (pmid: string) => {
-    router.push(`/article/${pmid}`);
+  const handleCreateJob = () => {
+    router.push('/jobs/new');
+  };
+
+  const handleViewJob = (jobId: string) => {
+    router.push(`/jobs/${jobId}`);
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 md:p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8 text-center">PubMed PDF Scraper</h1>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter search terms..."
-              className="flex-grow p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              onKeyUp={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            
-            <button
-              onClick={handleSearch}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50"
-            >
-              {loading ? 'Searching...' : 'Search PubMed'}
-            </button>
-          </div>
-          
-          {error && (
-            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4">Search Results</h2>
-          
-          {loading ? (
-            <div className="flex justify-center p-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          ) : results.length > 0 ? (
-            <ul className="space-y-4">
-              {results.map((item, index) => (
-                <li key={index} className="border-b pb-3">
-                  <h3 className="font-medium text-lg">
-                    <button 
-                      onClick={() => viewArticleDetails(item.pmid)}
-                      className="text-left hover:text-blue-600 focus:outline-none"
-                    >
-                      {item.title}
-                    </button>
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {item.authors?.join(', ')}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {item.journal} • {item.publication_date}
-                  </p>
-                  <div className="mt-2 flex space-x-4">
-                    <button
-                      onClick={() => viewArticleDetails(item.pmid)}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View Details
-                    </button>
-                    <a 
-                      href={`https://pubmed.ncbi.nlm.nih.gov/${item.pmid}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View on PubMed
-                    </a>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-center text-gray-500 p-6">
-              {query ? 'No results found. Try a different search term.' : 'Enter a search term to find PubMed articles.'}
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-gray-600">
+              Create and manage your PubMed scraping jobs
             </p>
-          )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <Button
+              onClick={handleCreateJob}
+              size="lg"
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              }
+            >
+              Create New Job
+            </Button>
+          </div>
+
+          {/* Jobs List */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Jobs</h2>
+
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : error ? (
+                <div className="text-center py-8">
+                  <p className="text-red-600">{error}</p>
+                  <Button
+                    onClick={loadJobs}
+                    variant="outline"
+                    className="mt-4"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : jobs.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No jobs yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by creating your first scraping job.</p>
+                  <div className="mt-6">
+                    <Button onClick={handleCreateJob}>
+                      Create New Job
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {jobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleViewJob(job.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-medium text-gray-900">{job.name}</h3>
+                          <p className="text-sm text-gray-500 truncate max-w-md">{job.query}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Created {formatDateTime(job.created_at)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                          <StatusChip status={formatJobStatus(job.status).text} />
+                          <span className="text-sm text-gray-500">
+                            {job.max_results} results
+                          </span>
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
