@@ -1,4 +1,4 @@
-// API service for communicating with the PubMed Scraper backend
+// API service for communicating with the PubMed PDF Scraper backend
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 

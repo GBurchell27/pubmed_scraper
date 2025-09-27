@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-8 md:p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8 text-center">PubMed Scraper</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center">PubMed PDF Scraper</h1>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">

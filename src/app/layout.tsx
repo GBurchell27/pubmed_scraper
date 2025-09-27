@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PubMed Scraper",
+  title: "PubMed PDF Scraper",
   description: "Search and extract data from PubMed scientific publications",
   keywords: "PubMed, research, medical, scientific, publications",
 };
@@ -22,7 +22,7 @@ export default function RootLayout({
           <header className="bg-white dark:bg-gray-800 shadow">
             <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                PubMed Scraper
+                PubMed PDF Scraper
               </h1>
             </div>
           </header>
